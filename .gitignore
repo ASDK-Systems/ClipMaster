@@ -1,0 +1,56 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Node.js (frontend)
+node_modules/
+.next/
+out/
+
+# Media & Downloads
+downloads/
+output/
+*.mp4
+*.mp3
+*.wav
+*.webm
+*.mkv
+*.srt
+*.ass
+*.vtt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+client_secrets.json
+*.json.bak
+token.pickle
+
+# Docker
+docker-compose.override.yml
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+test_ollama.py
+test_ollama_large.py
