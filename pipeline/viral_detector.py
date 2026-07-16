@@ -234,23 +234,29 @@ def detect_viral_clips(
         transcript=formatted_transcript,
     )
 
+    use_gemini = settings.use_gemini and bool(settings.gemini_api_key)
+    provider = "Gemini" if use_gemini else "Ollama"
+    model_name = settings.gemini_model if use_gemini else settings.ollama_model
+    base_url = settings.gemini_base_url if use_gemini else settings.ollama_base_url
+
     logger.info(
-        "Requesting %d viral clips from Ollama (%s) at %s (prompt: %d chars)",
+        "Requesting %d viral clips from %s (%s) at %s (prompt: %d chars)",
         num_clips,
-        settings.ollama_model,
-        settings.ollama_base_url,
+        provider,
+        model_name,
+        base_url,
         len(user_prompt),
     )
 
-    # Call Ollama via its OpenAI-compatible API
+    # Call Gemini or Ollama, both via OpenAI-compatible APIs
     client = OpenAI(
-        base_url=settings.ollama_base_url,
-        api_key="ollama",  # Ollama doesn't need a real key but the client requires one
+        base_url=base_url,
+        api_key=settings.gemini_api_key if use_gemini else "ollama",  # Ollama doesn't need a real key but the client requires one
     )
 
     try:
         response = client.chat.completions.create(
-            model=settings.ollama_model,
+            model=model_name,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt},
