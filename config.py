@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434/v1"
     ollama_model: str = "gemma4"
 
+    # --- Gemini (cloud AI for viral clip detection, via OpenAI-compatible endpoint) ---
+    use_gemini: bool = True
+    gemini_api_key: str = ""
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    gemini_model: str = "gemini-3.1-flash-lite"
+
     # --- Database ---
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/ytautomation"
 
