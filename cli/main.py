@@ -191,48 +191,70 @@ def check() -> None:
         console.print("  ❌ OpenAI API Key: NOT SET (needed for Whisper STT)")
         all_good = False
 
-    # Check Ollama
+    # Check Gemini or Ollama, depending on config
     console.print()
     import httpx
 
-    try:
-        resp = httpx.get(
-            settings.ollama_base_url.replace("/v1", "/api/tags"),
-            timeout=5,
-        )
-        if resp.status_code == 200:
-            models_data = resp.json()
-            model_names = [m["name"] for m in models_data.get("models", [])]
-            console.print(
-                f"  ✅ Ollama: running at {settings.ollama_base_url} "
-                f"({len(model_names)} models)"
-            )
+    use_gemini = settings.use_gemini and bool(settings.gemini_api_key)
 
-            # Check if the configured model is pulled
-            configured = settings.ollama_model
-            # Match with or without :latest tag
-            matched = any(
-                m == configured or m == f"{configured}:latest" or configured == m.split(":")[0]
-                for m in model_names
+    if use_gemini:
+        try:
+            resp = httpx.get(
+                settings.gemini_base_url.rstrip("/") + "/models",
+                headers={"Authorization": f"Bearer {settings.gemini_api_key}"},
+                timeout=10,
             )
-            if matched:
-                console.print(f"  ✅ Ollama model: {configured}")
-            else:
-                console.print(
-                    f"  ⚠️  Ollama model '{configured}' not found. "
-                    f"Available: {', '.join(model_names[:5])}"
-                )
-                console.print(f"     Run: [bold]ollama pull {configured}[/bold]")
+            if resp.status_code == 200:
+                console.print(f"  ✅ Gemini: reachable at {settings.gemini_base_url}")
+                console.print(f"  ✅ Gemini model configured: {settings.gemini_model}")
+            elif resp.status_code == 401 or resp.status_code == 403:
+                console.print(f"  ❌ Gemini: API key rejected (status {resp.status_code})")
                 all_good = False
-        else:
-            console.print(f"  ❌ Ollama: responded with status {resp.status_code}")
+            else:
+                console.print(f"  ❌ Gemini: responded with status {resp.status_code}")
+                all_good = False
+        except (httpx.ConnectError, httpx.TimeoutException) as e:
+            console.print(f"  ❌ Gemini: not reachable ({e})")
             all_good = False
-    except (httpx.ConnectError, httpx.TimeoutException):
-        console.print(
-            f"  ❌ Ollama: not reachable at {settings.ollama_base_url}\n"
-            f"     Run: [bold]ollama serve[/bold]"
-        )
-        all_good = False
+    else:
+        try:
+            resp = httpx.get(
+                settings.ollama_base_url.replace("/v1", "/api/tags"),
+                timeout=5,
+            )
+            if resp.status_code == 200:
+                models_data = resp.json()
+                model_names = [m["name"] for m in models_data.get("models", [])]
+                console.print(
+                    f"  ✅ Ollama: running at {settings.ollama_base_url} "
+                    f"({len(model_names)} models)"
+                )
+
+                # Check if the configured model is pulled
+                configured = settings.ollama_model
+                # Match with or without :latest tag
+                matched = any(
+                    m == configured or m == f"{configured}:latest" or configured == m.split(":")[0]
+                    for m in model_names
+                )
+                if matched:
+                    console.print(f"  ✅ Ollama model: {configured}")
+                else:
+                    console.print(
+                        f"  ⚠️  Ollama model '{configured}' not found. "
+                        f"Available: {', '.join(model_names[:5])}"
+                    )
+                    console.print(f"     Run: [bold]ollama pull {configured}[/bold]")
+                    all_good = False
+            else:
+                console.print(f"  ❌ Ollama: responded with status {resp.status_code}")
+                all_good = False
+        except (httpx.ConnectError, httpx.TimeoutException):
+            console.print(
+                f"  ❌ Ollama: not reachable at {settings.ollama_base_url}\n"
+                f"     Run: [bold]ollama serve[/bold]"
+            )
+            all_good = False
 
     if all_good:
         console.print("\n[green bold]✅ All checks passed![/green bold]")
