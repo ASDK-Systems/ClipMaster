@@ -1,7 +1,7 @@
 """
 YTAutomation — Speech-to-Text Module
 
-Transcribes video/audio using mlx-whisper (Mac-optimized).
+Transcribes video/audio using OpenAI's cloud Whisper API (cross-platform).
 """
 
 from __future__ import annotations
@@ -10,12 +10,8 @@ import logging
 import subprocess
 import tempfile
 from pathlib import Path
-import warnings
 
-# Suppress FP16 warnings on CPU/MPS
-warnings.filterwarnings("ignore", message="FP16 is not supported on CPU")
-
-import mlx_whisper
+from openai import OpenAI
 from config import settings
 from pipeline.models import Transcript, TranscriptSegment, TranscriptWord
 
@@ -55,7 +51,7 @@ def _extract_audio(video_path: str, output_path: str, on_progress: callable = No
 
     file_size_mb = Path(output_path).stat().st_size / (1024 * 1024)
     if on_progress:
-        on_progress("TRANSCRIBE", f"Audio extracted: {file_size_mb:.1f} MB. Loading MLX Whisper...")
+        on_progress("TRANSCRIBE", f"Audio extracted: {file_size_mb:.1f} MB. Sending to OpenAI Whisper...")
     logger.info("Audio extracted: %.1f MB", file_size_mb)
 
     return output_path
@@ -67,27 +63,37 @@ def transcribe_audio(
     on_progress: callable = None,
 ) -> Transcript:
     """
-    Transcribe an audio file using MLX Whisper model.
+    Transcribe an audio file using OpenAI's cloud Whisper API.
     """
-    logger.info(f"Loading local Whisper model: '{settings.local_whisper_model}'")
+    if not settings.openai_api_key:
+        raise TranscriptionError(
+            "OPENAI_API_KEY not set. Required for transcription (cloud Whisper API)."
+        )
+
+    logger.info("Transcribing via OpenAI Whisper API")
     if on_progress:
-        on_progress("TRANSCRIBE", f"Running transcription with model: {settings.local_whisper_model}...")
-        on_progress("TRANSCRIBE", "This process is highly optimized for Mac Silicon (MLX).")
-    
+        on_progress("TRANSCRIBE", "Uploading audio to OpenAI Whisper API...")
+
+    client = OpenAI(api_key=settings.openai_api_key)
+
     kwargs = {
-        "word_timestamps": True,
-        "verbose": False
+        "model": "whisper-1",
+        "response_format": "verbose_json",
+        "timestamp_granularities": ["segment", "word"],
     }
     if language:
         kwargs["language"] = language
-        
-    result = mlx_whisper.transcribe(audio_path, path_or_hf_repo=settings.local_whisper_model, **kwargs)
+
+    with open(audio_path, "rb") as audio_file:
+        result = client.audio.transcriptions.create(file=audio_file, **kwargs)
+
+    result = result.model_dump()
 
     all_segments: list[TranscriptSegment] = []
     all_words: list[TranscriptWord] = []
-    
+
     detected_language = result.get("language", language or "en")
-    
+
     for seg in result.get("segments", []):
         all_segments.append(
             TranscriptSegment(
@@ -96,17 +102,16 @@ def transcribe_audio(
                 text=seg["text"].strip(),
             )
         )
-        
-        # Extract word timestamps
-        if "words" in seg:
-            for word_data in seg["words"]:
-                all_words.append(
-                    TranscriptWord(
-                        start=word_data["start"],
-                        end=word_data["end"],
-                        word=word_data["word"].strip(),
-                    )
-                )
+
+    # OpenAI returns word timestamps as a flat top-level list, not nested per-segment
+    for word_data in result.get("words", []):
+        all_words.append(
+            TranscriptWord(
+                start=word_data["start"],
+                end=word_data["end"],
+                word=word_data["word"].strip(),
+            )
+        )
 
     transcript = Transcript(
         language=detected_language,
