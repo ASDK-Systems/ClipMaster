@@ -73,6 +73,8 @@ def download_video(
         "no_warnings": True,
         "extract_flat": False,
     }
+    if settings.youtube_cookies_from_browser:
+        meta_opts["cookiesfrombrowser"] = (settings.youtube_cookies_from_browser,)
 
     try:
         with yt_dlp.YoutubeDL(meta_opts) as ydl:
@@ -146,6 +148,9 @@ def download_video(
 
     if settings.ffmpeg_location:
         download_opts["ffmpeg_location"] = settings.ffmpeg_location
+
+    if settings.youtube_cookies_from_browser:
+        download_opts["cookiesfrombrowser"] = (settings.youtube_cookies_from_browser,)
 
     try:
         with yt_dlp.YoutubeDL(download_opts) as ydl:
