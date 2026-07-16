@@ -72,6 +72,8 @@ def download_video(
         "quiet": True,
         "no_warnings": True,
         "extract_flat": False,
+        "js_runtimes": {"node": {}},
+        "remote_components": ["ejs:github"],
     }
     if settings.youtube_cookies_from_browser:
         meta_opts["cookiesfrombrowser"] = (settings.youtube_cookies_from_browser,)
@@ -135,6 +137,8 @@ def download_video(
 
     download_opts: dict = {
         "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "js_runtimes": {"node": {}},
+        "remote_components": ["ejs:github"],
         "merge_output_format": "mp4",
         "outtmpl": output_template,
         "noplaylist": True,
