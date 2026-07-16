@@ -45,6 +45,9 @@ class Settings(BaseSettings):
 
     # --- App Settings ---
     max_video_duration_minutes: int = 180
+    # Browser to pull YouTube cookies from, to bypass bot-detection (chrome, firefox, edge, brave, etc.)
+    # Leave empty to disable. Requires that browser to be closed, or logged into YouTube.
+    youtube_cookies_from_browser: str = ""
     max_clips_per_video: int = 10
     downloads_dir: Path = Path("./downloads")
     output_dir: Path = Path("./output")
