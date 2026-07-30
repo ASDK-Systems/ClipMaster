@@ -1,0 +1,23 @@
+```json
+{
+  "name": "enterprise-database-layer",
+  "version": "2.0.0",
+  "description": "High-performance enterprise database layer refactored by Worker-Node-03",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "db:migrate": "ts-node src/database/migrations/runner.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/pg": "^8.11.0",
+    "typescript": "^5.3.3"
+  }
+}
+```
