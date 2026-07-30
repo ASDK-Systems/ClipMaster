@@ -1,0 +1,8 @@
+{
+  "extends": ["eslint:recommended", "plugin:react/recommended", "plugin:security/recommended"],
+  "rules": {
+    "no-console": "warn",
+    "react/no-danger": "error",
+    "security/detect-object-injection": "error"
+  }
+}
